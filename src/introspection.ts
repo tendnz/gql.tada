@@ -117,6 +117,8 @@ interface DefaultScalars {
   Int: number;
 }
 
+interface DefaultEnums {}
+
 type mapScalar<
   Type extends IntrospectionScalarType,
   Scalars extends ScalarsLike = DefaultScalars,
@@ -130,10 +132,10 @@ type mapScalar<
       : unknown;
 };
 
-type mapEnum<T extends IntrospectionEnumType> = {
+type mapEnum<T extends IntrospectionEnumType, Enums extends EnumsLike = DefaultEnums> = {
   kind: 'ENUM';
   name: T['name'];
-  type: T['enumValues'][number]['name'];
+  type: T['name'] extends keyof Enums ? Enums[T['name']] : T['enumValues'][number]['name'];
 };
 
 type mapField<T> = T extends IntrospectionField
@@ -184,10 +186,11 @@ type mapUnion<T extends IntrospectionUnionType> = {
 type mapType<
   Type,
   Scalars extends ScalarsLike = DefaultScalars,
+  Enums extends EnumsLike = DefaultEnums,
 > = Type extends IntrospectionScalarType
   ? mapScalar<Type, Scalars>
   : Type extends IntrospectionEnumType
-    ? mapEnum<Type>
+    ? mapEnum<Type, Enums>
     : Type extends IntrospectionObjectType
       ? mapObject<Type>
       : Type extends IntrospectionInterfaceType
@@ -201,10 +204,11 @@ type mapType<
 type mapIntrospectionTypes<
   Query extends IntrospectionQuery,
   Scalars extends ScalarsLike = DefaultScalars,
+  Enums extends EnumsLike = DefaultEnums,
 > = obj<{
   [P in Query['__schema']['types'][number]['name']]: Query['__schema']['types'][number] extends infer Type
     ? Type extends { readonly name: P }
-      ? mapType<Type, Scalars>
+      ? mapType<Type, Scalars, Enums>
       : never
     : never;
 }>;
@@ -212,6 +216,7 @@ type mapIntrospectionTypes<
 type mapIntrospection<
   Query extends IntrospectionQuery,
   Scalars extends ScalarsLike = DefaultScalars,
+  Enums extends EnumsLike = DefaultEnums,
 > = {
   query: Query['__schema']['queryType']['name'];
   mutation: Query['__schema']['mutationType'] extends { name: string }
@@ -220,10 +225,14 @@ type mapIntrospection<
   subscription: Query['__schema']['subscriptionType'] extends { name: string }
     ? Query['__schema']['subscriptionType']['name']
     : never;
-  types: mapIntrospectionTypes<Query, Scalars>;
+  types: mapIntrospectionTypes<Query, Scalars, Enums>;
 };
 
 export type ScalarsLike = {
+  [name: string]: any;
+};
+
+export type EnumsLike = {
   [name: string]: any;
 };
 

@@ -4,6 +4,7 @@ import { Kind, parse as _parse } from '@0no-co/graphql.web';
 import type {
   IntrospectionQuery,
   ScalarsLike,
+  EnumsLike,
   IntrospectionLikeType,
   mapIntrospection,
 } from './introspection';
@@ -37,6 +38,7 @@ import type { stringLiteral, obj, matchOr, writable, DocumentDecoration } from '
 interface AbstractSetupSchema {
   introspection: IntrospectionQuery;
   scalars?: ScalarsLike;
+  enums?: EnumsLike;
   disableMasking?: boolean;
 }
 
@@ -210,7 +212,8 @@ interface GraphQLTadaAPI<Schema extends IntrospectionLikeType, Config extends Ab
 
 type schemaOfSetup<Setup extends AbstractSetupSchema> = mapIntrospection<
   matchOr<IntrospectionQuery, Setup['introspection'], never>,
-  matchOr<ScalarsLike, Setup['scalars'], {}>
+  matchOr<ScalarsLike, Setup['scalars'], {}>,
+  matchOr<EnumsLike, Setup['enums'], {}>
 >;
 
 type configOfSetup<Setup extends AbstractSetupSchema> = {
