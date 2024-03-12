@@ -243,4 +243,67 @@ describe('initGraphQLTada configuration', () => {
       })
     );
   });
+
+  testTypeHost('creates simple documents (%o) with undefined', (options) => {
+    const virtualHost = ts.createVirtualHost({
+      ...ts.readVirtualModule('expect-type'),
+      ...ts.readVirtualModule('@0no-co/graphql.web'),
+      ...ts.readSourceFolders(['.']),
+      'simpleIntrospection.ts': ts.readFileFromRoot(
+        'src/__tests__/fixtures/simpleIntrospection.ts'
+      ),
+      'index.ts': `
+        import { expectTypeOf } from 'expect-type';
+        import { simpleIntrospection } from './simpleIntrospection';
+        import { ResultOf, FragmentOf, initGraphQLTada, readFragment } from './api';
+        import { $tada } from './namespace';
+
+        const graphql = initGraphQLTada<{ introspection: simpleIntrospection; missingValue: 'undefined'}>();
+
+        const todoFragment = graphql(\`
+          fragment TodoData on Todo {
+            id
+            text
+          }
+        \`);
+
+        const todoQuery = graphql(\`
+          query {
+            todos {
+              id
+              complete
+              ...TodoData
+            }
+          }
+        \`, [todoFragment]);
+
+        const result: ResultOf<typeof todoQuery> = {} as any;
+
+        expectTypeOf<typeof result>().toEqualTypeOf<{
+          todos: ({
+            id: string | number;
+            complete: boolean | undefined;
+            [$tada.fragmentRefs]: {
+              TodoData: 'Todo';
+            };
+          } | undefined)[] | undefined;
+        }>();
+
+        const todo = readFragment(todoFragment, result?.todos?.[0]);
+
+        expectTypeOf<typeof todo>().toEqualTypeOf<{
+          id: string | number;
+          text: string;
+        } | undefined>();
+      `,
+    });
+
+    ts.runDiagnostics(
+      ts.createTypeHost({
+        ...options,
+        rootNames: ['index.ts'],
+        host: virtualHost,
+      })
+    );
+  });
 });
