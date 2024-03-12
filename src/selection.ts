@@ -18,18 +18,33 @@ type unwrapTypeRec<
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
   IsOptional,
+  MissingValue extends null | undefined,
 > = Type extends { readonly kind: 'NON_NULL'; readonly ofType: any }
   ? unwrapTypeRec<
       Type['ofType'],
       SelectionSet,
       Introspection,
       Fragments,
-      IsOptional extends void ? false : IsOptional
+      IsOptional extends void ? false : IsOptional,
+      MissingValue
     >
   : Type extends { readonly kind: 'LIST'; readonly ofType: any }
     ? IsOptional extends false
-      ? Array<unwrapTypeRec<Type['ofType'], SelectionSet, Introspection, Fragments, void>>
-      : null | Array<unwrapTypeRec<Type['ofType'], SelectionSet, Introspection, Fragments, void>>
+      ? Array<
+          unwrapTypeRec<Type['ofType'], SelectionSet, Introspection, Fragments, void, MissingValue>
+        >
+      :
+          | MissingValue
+          | Array<
+              unwrapTypeRec<
+                Type['ofType'],
+                SelectionSet,
+                Introspection,
+                Fragments,
+                void,
+                MissingValue
+              >
+            >
     : Type extends { readonly name: string }
       ? Introspection['types'][Type['name']] extends ObjectLikeType
         ? SelectionSet extends { kind: Kind.SELECTION_SET; selections: any }
@@ -38,18 +53,22 @@ type unwrapTypeRec<
                 SelectionSet['selections'],
                 Introspection['types'][Type['name']],
                 Introspection,
-                Fragments
+                Fragments,
+                MissingValue
               >
-            : null | getSelection<
-                SelectionSet['selections'],
-                Introspection['types'][Type['name']],
-                Introspection,
-                Fragments
-              >
+            :
+                | MissingValue
+                | getSelection<
+                    SelectionSet['selections'],
+                    Introspection['types'][Type['name']],
+                    Introspection,
+                    Fragments,
+                    MissingValue
+                  >
           : unknown
         : IsOptional extends false
           ? Introspection['types'][Type['name']]['type']
-          : null | Introspection['types'][Type['name']]['type']
+          : MissingValue | Introspection['types'][Type['name']]['type']
       : unknown;
 
 type getTypeDirective<Node> = Node extends { directives: any[] }
@@ -78,6 +97,7 @@ type getFragmentSelection<
   Type extends ObjectLikeType,
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
+  MissingValue extends null | undefined,
 > = Node extends { kind: Kind.INLINE_FRAGMENT; selectionSet: any }
   ? getPossibleTypeSelectionRec<
       Node['selectionSet']['selections'],
@@ -85,7 +105,8 @@ type getFragmentSelection<
       Type,
       Introspection,
       Fragments,
-      {}
+      {},
+      MissingValue
     >
   : Node extends { kind: Kind.FRAGMENT_SPREAD; name: any }
     ? Node['name']['value'] extends keyof Fragments
@@ -97,7 +118,8 @@ type getFragmentSelection<
             Type,
             Introspection,
             Fragments,
-            {}
+            {},
+            MissingValue
           >
       : {}
     : {};
@@ -126,6 +148,7 @@ type getSelection<
   Type extends ObjectLikeType,
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
+  MissingValue extends null | undefined,
 > = Type extends { kind: 'UNION' | 'INTERFACE'; possibleTypes: any }
   ? {
       [PossibleType in Type['possibleTypes']]: getPossibleTypeSelectionRec<
@@ -139,11 +162,20 @@ type getSelection<
         // - Marking the field as optional makes it clear that it cannot just be used
         // - It protects against a very specific edge case where users forget to select `__typename`
         //   above and below an unmasked fragment, causing TypeScript to show unmergeable types
-        { __typename?: PossibleType }
+        { __typename?: PossibleType },
+        MissingValue
       >;
     }[Type['possibleTypes']]
   : Type extends { kind: 'OBJECT'; name: any }
-    ? getPossibleTypeSelectionRec<Selections, Type['name'], Type, Introspection, Fragments, {}>
+    ? getPossibleTypeSelectionRec<
+        Selections,
+        Type['name'],
+        Type,
+        Introspection,
+        Fragments,
+        {},
+        MissingValue
+      >
     : {};
 
 type getPossibleTypeSelectionRec<
@@ -153,6 +185,7 @@ type getPossibleTypeSelectionRec<
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
   SelectionAcc,
+  MissingValue extends null | undefined,
 > = Selections extends [infer Node, ...infer Rest]
   ? getPossibleTypeSelectionRec<
       Rest,
@@ -166,7 +199,14 @@ type getPossibleTypeSelectionRec<
           ? PossibleType extends getTypenameOfType<Subtype>
             ?
                 | (isOptional<Node> extends true ? {} : never)
-                | getFragmentSelection<Node, PossibleType, Subtype, Introspection, Fragments>
+                | getFragmentSelection<
+                    Node,
+                    PossibleType,
+                    Subtype,
+                    Introspection,
+                    Fragments,
+                    MissingValue
+                  >
             : {}
           : Node extends { kind: Kind.FRAGMENT_SPREAD; name: any }
             ? makeUndefinedFragmentRef<Node['name']['value']>
@@ -181,7 +221,8 @@ type getPossibleTypeSelectionRec<
                       Node['selectionSet'],
                       Introspection,
                       Fragments,
-                      getTypeDirective<Node>
+                      getTypeDirective<Node>,
+                      MissingValue
                     >;
               }
             : {
@@ -192,11 +233,13 @@ type getPossibleTypeSelectionRec<
                       Node['selectionSet'],
                       Introspection,
                       Fragments,
-                      getTypeDirective<Node>
+                      getTypeDirective<Node>,
+                      MissingValue
                     >;
               }
           : {}) &
-        SelectionAcc
+        SelectionAcc,
+      MissingValue
     >
   : obj<SelectionAcc>;
 
@@ -204,6 +247,7 @@ type getOperationSelectionType<
   Definition,
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
+  MissingValue extends null | undefined,
 > = Definition extends {
   kind: Kind.OPERATION_DEFINITION;
   selectionSet: any;
@@ -211,7 +255,13 @@ type getOperationSelectionType<
 }
   ? Introspection['types'][Introspection[Definition['operation']]] extends infer Type extends
       ObjectLikeType
-    ? getSelection<Definition['selectionSet']['selections'], Type, Introspection, Fragments>
+    ? getSelection<
+        Definition['selectionSet']['selections'],
+        Type,
+        Introspection,
+        Fragments,
+        MissingValue
+      >
     : {}
   : never;
 
@@ -219,6 +269,7 @@ type getFragmentSelectionType<
   Definition,
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any },
+  MissingValue extends null | undefined,
 > = Definition extends {
   kind: Kind.FRAGMENT_DEFINITION;
   selectionSet: any;
@@ -226,7 +277,13 @@ type getFragmentSelectionType<
 }
   ? Introspection['types'][Definition['typeCondition']['name']['value']] extends infer Type extends
       ObjectLikeType
-    ? getSelection<Definition['selectionSet']['selections'], Type, Introspection, Fragments>
+    ? getSelection<
+        Definition['selectionSet']['selections'],
+        Type,
+        Introspection,
+        Fragments,
+        MissingValue
+      >
     : never
   : never;
 
@@ -234,11 +291,22 @@ type getDocumentType<
   Document extends DocumentNodeLike,
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any } = {},
+  MissingValue extends null | undefined = null,
 > = Document['definitions'] extends readonly [infer Definition, ...infer Rest]
   ? Definition extends { kind: Kind.OPERATION_DEFINITION }
-    ? getOperationSelectionType<Definition, Introspection, getFragmentMapRec<Rest> & Fragments>
+    ? getOperationSelectionType<
+        Definition,
+        Introspection,
+        getFragmentMapRec<Rest> & Fragments,
+        MissingValue
+      >
     : Definition extends { kind: Kind.FRAGMENT_DEFINITION }
-      ? getFragmentSelectionType<Definition, Introspection, getFragmentMapRec<Rest> & Fragments>
+      ? getFragmentSelectionType<
+          Definition,
+          Introspection,
+          getFragmentMapRec<Rest> & Fragments,
+          MissingValue
+        >
       : never
   : never;
 

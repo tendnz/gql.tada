@@ -40,6 +40,7 @@ interface AbstractSetupSchema {
   scalars?: ScalarsLike;
   enums?: EnumsLike;
   disableMasking?: boolean;
+  missingValue?: 'null' | 'undefined' | 'both';
 }
 
 /** Abstract type for internal configuration
@@ -47,6 +48,7 @@ interface AbstractSetupSchema {
  */
 interface AbstractConfig {
   isMaskingDisabled: boolean;
+  missingValue: null | undefined;
 }
 
 /** This is used to configure gql.tada with your introspection data and scalars.
@@ -134,7 +136,8 @@ interface GraphQLTadaAPI<Schema extends IntrospectionLikeType, Config extends Ab
     parseDocument<In>,
     Schema,
     getFragmentsOfDocumentsRec<Fragments>,
-    Config['isMaskingDisabled']
+    Config['isMaskingDisabled'],
+    Config['missingValue']
   >;
 
   /** Function to validate the type of a given scalar or enum value.
@@ -218,6 +221,13 @@ type schemaOfSetup<Setup extends AbstractSetupSchema> = mapIntrospection<
 
 type configOfSetup<Setup extends AbstractSetupSchema> = {
   isMaskingDisabled: Setup['disableMasking'] extends true ? true : false;
+  missingValue: Setup['missingValue'] extends 'null'
+    ? null
+    : Setup['missingValue'] extends 'undefined'
+      ? undefined
+      : Setup['missingValue'] extends 'both'
+        ? null | undefined
+        : null;
 };
 
 /** Setup function to create a typed `graphql` document function with.
@@ -305,10 +315,11 @@ export type getDocumentNode<
   Introspection extends IntrospectionLikeType,
   Fragments extends { [name: string]: any } = {},
   isMaskingDisabled = false,
-> = getDocumentType<Document, Introspection, Fragments> extends never
+  MissingValue extends null | undefined = null,
+> = getDocumentType<Document, Introspection, Fragments, MissingValue> extends never
   ? never
   : TadaDocumentNode<
-      getDocumentType<Document, Introspection, Fragments>,
+      getDocumentType<Document, Introspection, Fragments, MissingValue>,
       getVariablesType<Document, Introspection>,
       decorateFragmentDef<Document, isMaskingDisabled>
     >;

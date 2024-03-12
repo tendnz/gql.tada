@@ -583,3 +583,89 @@ describe('graphql.persisted()', () => {
     graphql.persisted<number>('Test');
   });
 });
+
+describe('graphql() with undefined', () => {
+  const graphql = initGraphQLTada<{
+    introspection: simpleIntrospection;
+    missingValue: 'undefined';
+  }>();
+  it('should map nulls to undefined', () => {
+    const fragment = graphql(`
+      fragment Fields on Todo @_unmask {
+        id
+        text
+      }
+    `);
+    const query = graphql(
+      `
+        query Test($limit: Int) {
+          todos(limit: $limit) {
+            ...Fields
+          }
+        }
+      `,
+      [fragment]
+    );
+
+    expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
+      id: string | number;
+      text: string;
+    }>();
+
+    expectTypeOf<ResultOf<typeof query>>().toEqualTypeOf<{
+      todos:
+        | (
+            | {
+                id: string | number;
+                text: string;
+              }
+            | undefined
+          )[]
+        | undefined;
+    }>();
+  });
+});
+
+describe('graphql() with null and undefined', () => {
+  const graphql = initGraphQLTada<{
+    introspection: simpleIntrospection;
+    missingValue: 'both';
+  }>();
+  it('should map nulls to undefined', () => {
+    const fragment = graphql(`
+      fragment Fields on Todo @_unmask {
+        id
+        text
+      }
+    `);
+    const query = graphql(
+      `
+        query Test($limit: Int) {
+          todos(limit: $limit) {
+            ...Fields
+          }
+        }
+      `,
+      [fragment]
+    );
+
+    expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
+      id: string | number;
+      text: string;
+    }>();
+
+    expectTypeOf<ResultOf<typeof query>>().toEqualTypeOf<{
+      todos:
+        | (
+            | {
+                id: string | number;
+                text: string;
+              }
+            | undefined
+            | null
+          )[]
+        | undefined
+        | null;
+    }>();
+  });
+});
