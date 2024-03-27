@@ -110,7 +110,7 @@ interface IntrospectionInputValue {
 }
 
 interface DefaultScalars {
-  ID: number | string;
+  ID: string;
   Boolean: boolean;
   String: string;
   Float: number;
@@ -118,19 +118,6 @@ interface DefaultScalars {
 }
 
 interface DefaultEnums {}
-
-type mapScalar<
-  Type extends IntrospectionScalarType,
-  Scalars extends ScalarsLike = DefaultScalars,
-> = {
-  kind: 'SCALAR';
-  name: Type['name'];
-  type: Type['name'] extends keyof Scalars
-    ? Scalars[Type['name']]
-    : Type['name'] extends keyof DefaultScalars
-      ? DefaultScalars[Type['name']]
-      : unknown;
-};
 
 type mapEnum<T extends IntrospectionEnumType, Enums extends EnumsLike = DefaultEnums> = {
   kind: 'ENUM';
@@ -183,50 +170,70 @@ type mapUnion<T extends IntrospectionUnionType> = {
   possibleTypes: T['possibleTypes'][number]['name'];
 };
 
-type mapType<
-  Type,
-  Scalars extends ScalarsLike = DefaultScalars,
-  Enums extends EnumsLike = DefaultEnums,
-> = Type extends IntrospectionScalarType
-  ? mapScalar<Type, Scalars>
-  : Type extends IntrospectionEnumType
-    ? mapEnum<Type, Enums>
-    : Type extends IntrospectionObjectType
-      ? mapObject<Type>
-      : Type extends IntrospectionInterfaceType
-        ? mapInterface<Type>
-        : Type extends IntrospectionUnionType
-          ? mapUnion<Type>
-          : Type extends IntrospectionInputObjectType
-            ? mapInputObject<Type>
+/** @internal */
+type mapType<Type, Enums extends EnumsLike = DefaultEnums> = Type extends IntrospectionEnumType
+  ? mapEnum<Type, Enums>
+  : Type extends IntrospectionObjectType
+    ? mapObject<Type>
+    : Type extends IntrospectionInterfaceType
+      ? mapInterface<Type>
+      : Type extends IntrospectionUnionType
+        ? mapUnion<Type>
+        : Type extends IntrospectionInputObjectType
+          ? mapInputObject<Type>
+          : Type extends IntrospectionScalarType
+            ? unknown
             : never;
 
-type mapIntrospectionTypes<
-  Query extends IntrospectionQuery,
-  Scalars extends ScalarsLike = DefaultScalars,
-  Enums extends EnumsLike = DefaultEnums,
-> = obj<{
+/** @internal */
+type mapIntrospectionTypes<Query extends IntrospectionQuery, Enums extends EnumsLike = DefaultEnums> = obj<{
   [P in Query['__schema']['types'][number]['name']]: Query['__schema']['types'][number] extends infer Type
     ? Type extends { readonly name: P }
-      ? mapType<Type, Scalars, Enums>
+      ? mapType<Type, Enums>
       : never
     : never;
 }>;
 
-type mapIntrospection<
-  Query extends IntrospectionQuery,
+/** @internal */
+type mapIntrospectionScalarTypes<Scalars extends ScalarsLike = DefaultScalars> = obj<{
+  [P in keyof Scalars | keyof DefaultScalars]: {
+    kind: 'SCALAR';
+    name: P;
+    type: P extends keyof Scalars
+      ? Scalars[P]
+      : P extends keyof DefaultScalars
+        ? DefaultScalars[P]
+        : never;
+  };
+}>;
+
+/** @internal */
+type mapIntrospection<Query extends IntrospectionLikeInput, Enums extends EnumsLike = DefaultEnums> = Query extends IntrospectionQuery
+  ? {
+      query: Query['__schema']['queryType']['name'];
+      mutation: Query['__schema']['mutationType'] extends { name: string }
+        ? Query['__schema']['mutationType']['name']
+        : never;
+      subscription: Query['__schema']['subscriptionType'] extends { name: string }
+        ? Query['__schema']['subscriptionType']['name']
+        : never;
+      types: mapIntrospectionTypes<Query, Enums>;
+    }
+  : Query;
+
+type addIntrospectionScalars<
+  Schema extends SchemaLike,
   Scalars extends ScalarsLike = DefaultScalars,
-  Enums extends EnumsLike = DefaultEnums,
 > = {
-  query: Query['__schema']['queryType']['name'];
-  mutation: Query['__schema']['mutationType'] extends { name: string }
-    ? Query['__schema']['mutationType']['name']
-    : never;
-  subscription: Query['__schema']['subscriptionType'] extends { name: string }
-    ? Query['__schema']['subscriptionType']['name']
-    : never;
-  types: mapIntrospectionTypes<Query, Scalars, Enums>;
+  query: Schema['query'];
+  mutation: Schema['mutation'];
+  subscription: Schema['subscription'];
+  types: mapIntrospectionScalarTypes<Scalars> & Schema['types'];
 };
+
+/** Either a format of introspection data or an already preprocessed schema.
+ * @see {@link IntrospectionQuery} */
+export type IntrospectionLikeInput = SchemaLike | IntrospectionQuery;
 
 export type ScalarsLike = {
   [name: string]: any;
@@ -236,11 +243,11 @@ export type EnumsLike = {
   [name: string]: any;
 };
 
-export type IntrospectionLikeType = {
+export type SchemaLike = {
   query: string;
   mutation?: any;
   subscription?: any;
   types: { [name: string]: any };
 };
 
-export type { mapIntrospectionTypes, mapIntrospection };
+export type { mapType, mapIntrospectionTypes, mapIntrospection, addIntrospectionScalars };

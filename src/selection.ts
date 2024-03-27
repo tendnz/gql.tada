@@ -4,7 +4,7 @@ import type { obj } from './utils';
 import type { DocumentNodeLike } from './parser';
 
 import type { $tada, makeUndefinedFragmentRef } from './namespace';
-import type { IntrospectionLikeType } from './introspection';
+import type { SchemaLike } from './introspection';
 
 type ObjectLikeType = {
   kind: 'OBJECT' | 'INTERFACE' | 'UNION';
@@ -15,7 +15,7 @@ type ObjectLikeType = {
 type unwrapTypeRec<
   Type,
   SelectionSet,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   IsOptional,
   MissingValue extends null | undefined,
@@ -95,7 +95,7 @@ type getFragmentSelection<
   Node,
   PossibleType extends string,
   Type extends ObjectLikeType,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   MissingValue extends null | undefined,
 > = Node extends { kind: Kind.INLINE_FRAGMENT; selectionSet: any }
@@ -127,7 +127,7 @@ type getFragmentSelection<
 type getSpreadSubtype<
   Node,
   BaseType extends ObjectLikeType,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
 > = Node extends { kind: Kind.INLINE_FRAGMENT; typeCondition?: any }
   ? Node['typeCondition'] extends { kind: Kind.NAMED_TYPE; name: any }
@@ -146,7 +146,7 @@ type getTypenameOfType<Type> =
 type getSelection<
   Selections,
   Type extends ObjectLikeType,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   MissingValue extends null | undefined,
 > = Type extends { kind: 'UNION' | 'INTERFACE'; possibleTypes: any }
@@ -182,7 +182,7 @@ type getPossibleTypeSelectionRec<
   Selections,
   PossibleType extends string,
   Type extends ObjectLikeType,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   SelectionAcc,
   MissingValue extends null | undefined,
@@ -245,7 +245,7 @@ type getPossibleTypeSelectionRec<
 
 type getOperationSelectionType<
   Definition,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   MissingValue extends null | undefined,
 > = Definition extends {
@@ -267,7 +267,7 @@ type getOperationSelectionType<
 
 type getFragmentSelectionType<
   Definition,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any },
   MissingValue extends null | undefined,
 > = Definition extends {
@@ -289,7 +289,7 @@ type getFragmentSelectionType<
 
 type getDocumentType<
   Document extends DocumentNodeLike,
-  Introspection extends IntrospectionLikeType,
+  Introspection extends SchemaLike,
   Fragments extends { [name: string]: any } = {},
   MissingValue extends null | undefined = null,
 > = Document['definitions'] extends readonly [infer Definition, ...infer Rest]

@@ -1,6 +1,6 @@
 {
   "name": "@gql.tada/cli-utils",
-  "version": "0.1.2",
+  "version": "0.3.1",
   "public": true,
   "description": "Main logic for gql.tada’s CLI tool.",
   "author": "0no.co <hi@0no.co>",
@@ -41,15 +41,18 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "comment-json": "^4.2.3",
+    "json5": "^2.2.3",
     "rollup": "^4.9.4",
     "sade": "^1.8.1",
     "type-fest": "^4.10.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@urql/introspection": "^1.0.3",
+    "@gql.tada/internal": "workspace:*",
     "graphql": "^16.8.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
   },
   "publishConfig": {
     "access": "public",

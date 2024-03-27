@@ -1,6 +1,3 @@
-/** Constraints a given string to a string literal. */
-export type stringLiteral<T extends string> = string extends T ? never : string;
-
 /** Returns `T` if it matches `Constraint` without being equal to it. Failing this evaluates to `Fallback` otherwise. */
 export type matchOr<Constraint, T, Fallback> = Constraint extends T
   ? Fallback
@@ -15,6 +12,11 @@ export type matchOr<Constraint, T, Fallback> = Constraint extends T
  * both in terms of type checking and for type hints and the tsserver output.
  */
 export type obj<T> = T extends { [key: string | number]: any } ? { [K in keyof T]: T[K] } : never;
+
+/** Turns a given union to an intersection type. */
+export type overload<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void
+  ? U & T
+  : never;
 
 /** Marks all properties as writable */
 export type writable<T> = { -readonly [K in keyof T]: T[K] };
@@ -38,10 +40,7 @@ export type writable<T> = { -readonly [K in keyof T]: T[K] };
  *
  * @see {@link https://github.com/dotansimha/graphql-typed-document-node} for more information.
  */
-export interface DocumentDecoration<
-  Result = { [key: string]: any },
-  Variables = { [key: string]: any },
-> {
+export interface DocumentDecoration<Result = any, Variables = any> {
   /** Type to support `@graphql-typed-document-node/core`
    * @internal
    */
