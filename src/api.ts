@@ -213,8 +213,11 @@ interface GraphQLTadaAPI<Schema extends SchemaLike, Config extends AbstractConfi
 }
 
 type schemaOfSetup<Setup extends AbstractSetupSchema> = addIntrospectionScalars<
-  mapIntrospection<matchOr<IntrospectionLikeInput, Setup['introspection'], never>>,
-  matchOr<EnumsLike, Setup['enums'], {}>
+  mapIntrospection<
+    matchOr<IntrospectionLikeInput, Setup['introspection'], never>,
+    matchOr<EnumsLike, Setup['enums'], {}>
+  >,
+  matchOr<ScalarsLike, Setup['scalars'], {}>
 >;
 
 type configOfSetup<Setup extends AbstractSetupSchema> = {

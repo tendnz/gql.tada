@@ -281,7 +281,7 @@ describe('initGraphQLTada configuration', () => {
 
         expectTypeOf<typeof result>().toEqualTypeOf<{
           todos: ({
-            id: string | number;
+            id: string;
             complete: boolean | undefined;
             [$tada.fragmentRefs]: {
               TodoData: 'Todo';
@@ -292,7 +292,7 @@ describe('initGraphQLTada configuration', () => {
         const todo = readFragment(todoFragment, result?.todos?.[0]);
 
         expectTypeOf<typeof todo>().toEqualTypeOf<{
-          id: string | number;
+          id: string;
           text: string;
         } | undefined>();
       `,

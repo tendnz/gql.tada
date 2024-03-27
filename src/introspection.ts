@@ -186,7 +186,10 @@ type mapType<Type, Enums extends EnumsLike = DefaultEnums> = Type extends Intros
             : never;
 
 /** @internal */
-type mapIntrospectionTypes<Query extends IntrospectionQuery, Enums extends EnumsLike = DefaultEnums> = obj<{
+type mapIntrospectionTypes<
+  Query extends IntrospectionQuery,
+  Enums extends EnumsLike = DefaultEnums
+> = obj<{
   [P in Query['__schema']['types'][number]['name']]: Query['__schema']['types'][number] extends infer Type
     ? Type extends { readonly name: P }
       ? mapType<Type, Enums>
@@ -208,7 +211,10 @@ type mapIntrospectionScalarTypes<Scalars extends ScalarsLike = DefaultScalars> =
 }>;
 
 /** @internal */
-type mapIntrospection<Query extends IntrospectionLikeInput, Enums extends EnumsLike = DefaultEnums> = Query extends IntrospectionQuery
+type mapIntrospection<
+  Query extends IntrospectionLikeInput,
+  Enums extends EnumsLike = DefaultEnums
+> = Query extends IntrospectionQuery
   ? {
       query: Query['__schema']['queryType']['name'];
       mutation: Query['__schema']['mutationType'] extends { name: string }

@@ -656,7 +656,7 @@ describe('graphql() with undefined', () => {
     );
 
     expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
-      id: string | number;
+      id: string;
       text: string;
     }>();
 
@@ -664,7 +664,7 @@ describe('graphql() with undefined', () => {
       todos:
         | (
             | {
-                id: string | number;
+                id: string;
                 text: string;
               }
             | undefined
@@ -698,7 +698,7 @@ describe('graphql() with null and undefined', () => {
     );
 
     expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
-      id: string | number;
+      id: string;
       text: string;
     }>();
 
@@ -706,7 +706,7 @@ describe('graphql() with null and undefined', () => {
       todos:
         | (
             | {
-                id: string | number;
+                id: string;
                 text: string;
               }
             | undefined

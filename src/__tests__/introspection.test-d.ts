@@ -21,7 +21,7 @@ describe('mapIntrospection', () => {
   });
 
   it('applies enum types as appropriate', () => {
-    type expected = mapIntrospection<simpleIntrospection, {}, { test: TestEnum }>;
+    type expected = mapIntrospection<simpleIntrospection, { test: TestEnum }>;
 
     type enumTest = expected['types']['test']['type'];
     expectTypeOf<enumTest>().toEqualTypeOf<TestEnum>();
