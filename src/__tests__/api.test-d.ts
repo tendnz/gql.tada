@@ -717,3 +717,95 @@ describe('graphql() with null and undefined', () => {
     }>();
   });
 });
+
+describe('graphql() schema with undefined', () => {
+  const graphql = initGraphQLTada<{
+    introspection: simpleSchema;
+    missingValue: 'undefined';
+  }>();
+  it('should map nulls to undefined', () => {
+    const fragment = graphql(`
+      fragment Fields on Todo @_unmask {
+        id
+        text
+        complete
+      }
+    `);
+    const query = graphql(
+      `
+        query Test($limit: Int) {
+          todos(limit: $limit) {
+            ...Fields
+          }
+        }
+      `,
+      [fragment]
+    );
+
+    expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
+      id: string;
+      text: string;
+      complete: boolean | undefined;
+    }>();
+
+    expectTypeOf<ResultOf<typeof query>>().toEqualTypeOf<{
+      todos:
+        | (
+            | {
+                id: string;
+                text: string;
+                complete: boolean | undefined;
+              }
+            | undefined
+          )[]
+        | undefined;
+    }>();
+  });
+});
+
+describe('graphql() schema with null and undefined', () => {
+  const graphql = initGraphQLTada<{
+    introspection: simpleSchema;
+    missingValue: 'both';
+  }>();
+  it('should map nulls to undefined', () => {
+    const fragment = graphql(`
+      fragment Fields on Todo @_unmask {
+        id
+        text
+        complete
+      }
+    `);
+    const query = graphql(
+      `
+        query Test($limit: Int) {
+          todos(limit: $limit) {
+            ...Fields
+          }
+        }
+      `,
+      [fragment]
+    );
+
+    expectTypeOf<FragmentOf<typeof fragment>>().toEqualTypeOf<{
+      id: string;
+      text: string;
+      complete: boolean | undefined | null;
+    }>();
+
+    expectTypeOf<ResultOf<typeof query>>().toEqualTypeOf<{
+      todos:
+        | (
+            | {
+                id: string;
+                text: string;
+                complete: boolean | undefined | null;
+              }
+            | undefined
+            | null
+          )[]
+        | undefined
+        | null;
+    }>();
+  });
+});
